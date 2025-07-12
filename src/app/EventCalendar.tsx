@@ -1,30 +1,65 @@
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  ChevronLeft,
-  ChevronRight,
-  FilterIcon as Funnel,
-  Menu,
-  Plus,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, FilterIcon as Funnel, Menu, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   addDays,
   endOfMonth,
   endOfWeek,
-  isSameMonth,
   startOfMonth,
   startOfWeek,
   format,
+  parseISO,
+  addWeeks,
+  addMonths,
+  isBefore,
 } from "date-fns";
+import { EventForm } from "@/components/elements/EventForm";
+import { DayView, MonthView, WeekView } from "@/components/elements/CalendarView";
+
+export interface Event {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  recurrence: "none" | "daily" | "weekly" | "monthly" | "custom";
+  customRecurrence?: {
+    interval: number;
+    unit: "days" | "weeks" | "months";
+  };
+  color: string;
+  category?: string;
+  endDate?: string;
+}
 
 function EventCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("month");
+  const [events, setEvents] = useState<Event[]>([]);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
+
+  useEffect(() => {
+    const savedEvents = localStorage.getItem("calendar-events");
+    if (savedEvents) {
+      const parsedEvents = JSON.parse(savedEvents);
+      if (Array.isArray(parsedEvents) && parsedEvents.length > 0) {
+        setEvents(parsedEvents);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      localStorage.setItem("calendar-events", JSON.stringify(events));
+    }
+  }, [events]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -61,16 +96,148 @@ function EventCalendar() {
     }
   };
 
-  const EVENTS = {};
+  const generateRecurringEvents = (baseEvent: Event): Event[] => {
+    if (baseEvent.recurrence === "none") return [baseEvent];
+
+    const recurringEvents: Event[] = [baseEvent];
+    const startDate = parseISO(baseEvent.date);
+    const endDate = baseEvent.endDate ? parseISO(baseEvent.endDate) : addMonths(startDate, 12);
+
+    let currentDate = startDate;
+
+    while (isBefore(currentDate, endDate)) {
+      let nextDate: Date;
+
+      switch (baseEvent.recurrence) {
+        case "daily":
+          nextDate = addDays(currentDate, 1);
+          break;
+        case "weekly":
+          nextDate = addWeeks(currentDate, 1);
+          break;
+        case "monthly":
+          nextDate = addMonths(currentDate, 1);
+          break;
+        case "custom":
+          if (baseEvent.customRecurrence) {
+            const { interval, unit } = baseEvent.customRecurrence;
+            switch (unit) {
+              case "days":
+                nextDate = addDays(currentDate, interval);
+                break;
+              case "weeks":
+                nextDate = addWeeks(currentDate, interval);
+                break;
+              case "months":
+                nextDate = addMonths(currentDate, interval);
+                break;
+              default:
+                nextDate = addDays(currentDate, 1);
+            }
+          } else {
+            nextDate = addDays(currentDate, 1);
+          }
+          break;
+        default:
+          nextDate = addDays(currentDate, 1);
+      }
+
+      if (isBefore(nextDate, endDate)) {
+        recurringEvents.push({
+          ...baseEvent,
+          id: `${baseEvent.id}-${format(nextDate, "yyyy-MM-dd")}`,
+          date: format(nextDate, "yyyy-MM-dd"),
+        });
+      }
+
+      currentDate = nextDate;
+    }
+
+    return recurringEvents;
+  };
+
+  const getAllEvents = (): Event[] => {
+    const allEvents: Event[] = [];
+
+    events.forEach((event) => {
+      const recurringEvents = generateRecurringEvents(event);
+      allEvents.push(...recurringEvents);
+    });
+
+    return allEvents;
+  };
+
+  const getEventsForDate = (date: string): Event[] => {
+    return getAllEvents().filter((event) => event.date === date);
+  };
+
+  const getFilteredEvents = (): Event[] => {
+    let filteredEvents = getAllEvents();
+
+    if (searchTerm) {
+      filteredEvents = filteredEvents.filter(
+        (event) =>
+          event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          event.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    }
+
+    if (filterCategory !== "all") {
+      filteredEvents = filteredEvents.filter((event) => event.category === filterCategory);
+    }
+
+    return filteredEvents;
+  };
+
+  const addEvent = (eventData: Omit<Event, "id">) => {
+    const newEvent: Event = {
+      ...eventData,
+      id: Date.now().toString(),
+    };
+
+    setEvents((prev) => [...prev, newEvent]);
+    setShowEventForm(false);
+  };
+
+  const updateEvent = (eventId: string, eventData: Partial<Event>) => {
+    setEvents((prev) => prev.map((event) => (event.id === eventId ? { ...event, ...eventData } : event)));
+    setEditingEvent(null);
+    setShowEventForm(false);
+  };
+
+  // delete the schedule event
+  const deleteEvent = (eventId: string) => {
+    setEvents((prev) => prev.filter((event) => event.id !== eventId));
+    setEditingEvent(null);
+    setShowEventForm(false);
+  };
+
+  const handleDragStart = (e: Event) => {
+    setDraggedEvent(e);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetDate: string) => {
+    e.preventDefault();
+    if (draggedEvent) {
+      const baseEventId = draggedEvent.id.split("-")[0];
+      updateEvent(baseEventId, { date: targetDate });
+      setDraggedEvent(null);
+    }
+  };
+
+  const checkEventConflicts = (newEvent: Event): Event[] => {
+    const existingEvents = getEventsForDate(newEvent.date);
+    return existingEvents.filter((event) => event.id !== newEvent.id && event.time === newEvent.time);
+  };
 
   return (
     <div className="flex h-screen w-full gap-2">
       <div className="w-2/9 bg-white px-8 py-4 rounded shadow flex flex-col">
-        <Tabs
-          defaultValue="month"
-          className="w-full"
-          onValueChange={setActiveTab}
-        >
+        <Tabs defaultValue="month" className="w-full" onValueChange={setActiveTab}>
           <div className="border-b border-gray-200 mb-2">
             <TabsList className="flex bg-slate-50 rounded-sm p-1 mb-4 w-full">
               <TabsTrigger value="day">Day</TabsTrigger>
@@ -96,10 +263,7 @@ function EventCalendar() {
             {activeTab === "day" && selectedDate
               ? format(selectedDate, "MMMM dd, yyyy")
               : activeTab === "week" && selectedDate
-              ? `${format(startOfWeek(selectedDate), "MMM dd")} - ${format(
-                  endOfWeek(selectedDate),
-                  "MMM dd, yyyy"
-                )}`
+              ? `${format(startOfWeek(selectedDate), "MMM dd")} - ${format(endOfWeek(selectedDate), "MMM dd, yyyy")}`
               : format(currentMonth, "MMMM yyyy")}
           </h1>
           <div className="flex items-center gap-3">
@@ -127,8 +291,11 @@ function EventCalendar() {
             <Button variant="outline">
               <Menu />
             </Button>
-            <Button className="px-6 py-2 bg-blue-500 text-white hover:bg-blue-600">
-              <Plus className="mr-2 h-4 w-4" /> Add Schedule
+            <Button
+              onClick={() => setShowEventForm(true)}
+              className="px-6 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Add Schedule
             </Button>
           </div>
         </div>
@@ -136,145 +303,56 @@ function EventCalendar() {
           <MonthView
             currentMonth={currentMonth}
             calendarDays={calendarDays}
-            EVENTS={EVENTS}
+            events={getFilteredEvents()}
+            onEventClick={(event) => {
+              setEditingEvent(event);
+              setShowEventForm(true);
+            }}
+            onDateClick={(date) => {
+              setSelectedDate(date);
+              setShowEventForm(true);
+            }}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           />
         )}
         {activeTab === "day" && selectedDate && (
-          <DayView selectedDate={selectedDate} EVENTS={EVENTS} />
+          <DayView
+            selectedDate={selectedDate}
+            events={getFilteredEvents()}
+            onEventClick={(event) => {
+              setEditingEvent(event);
+              setShowEventForm(true);
+            }}
+          />
         )}
         {activeTab === "week" && selectedDate && (
-          <WeekView startDate={startOfWeek(selectedDate)} EVENTS={EVENTS} />
+          <WeekView
+            startDate={startOfWeek(selectedDate)}
+            events={getFilteredEvents()}
+            onEventClick={(event) => {
+              setEditingEvent(event);
+              setShowEventForm(true);
+            }}
+          />
         )}
       </div>
+      {showEventForm && (
+        <EventForm
+          event={editingEvent}
+          onSave={editingEvent ? (eventData) => updateEvent(editingEvent.id, eventData) : addEvent}
+          onDelete={editingEvent ? () => deleteEvent(editingEvent.id) : undefined}
+          onClose={() => {
+            setShowEventForm(false);
+            setEditingEvent(null);
+          }}
+          selectedDate={selectedDate}
+          checkConflicts={checkEventConflicts}
+        />
+      )}
     </div>
   );
 }
 
 export default EventCalendar;
-
-export const MonthView = ({ currentMonth, calendarDays, EVENTS }: any) => {
-  return (
-    <div>
-      <div className="grid grid-cols-7 gap-px mt-2 mb-2 bg-gray-200 text-gray-600 text-sm font-semibold border">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="py-3 bg-slate-100 px-auto text-center">
-            {day}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-px bg-gray-200 text-sm text-gray-700 border mb-4">
-        {calendarDays.map((date: any, idx: any) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          const event = EVENTS[dateStr];
-          return (
-            <div
-              key={idx}
-              className={`bg-white h-[120px] p-2 text-left relative ${
-                !isCurrentMonth ? "bg-gray-50 text-gray-400" : ""
-              } hover:bg-slate-50`}
-            >
-              <span className="font-semibold text-xs">{format(date, "d")}</span>
-              {event && (
-                <div
-                  className={`mt-2 px-2 py-1 rounded text-xs font-medium w-fit ${event.color}`}
-                >
-                  {event.title}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export const DayView = ({ selectedDate, EVENTS }: any) => {
-  const formattedDate = format(selectedDate, "yyyy-MM-dd");
-  const eventsForSelectedDay = Object.entries(EVENTS)
-    .filter(([dateKey]) => dateKey === formattedDate)
-    .map(([, event]) => event);
-
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${i.toString().padStart(2, "0")}:00`
-  );
-
-  return (
-    <div className="pt-4 pb-4">
-      <div className="grid grid-rows-24 gap-px bg-gray-200">
-        {hours.map((time, i) => (
-          <div key={i} className="flex bg-white px-4 py-3 items-start">
-            <div className="w-20 text-gray-400 text-sm">{time}</div>
-            <div className="flex-1">
-              {i === 0 &&
-                eventsForSelectedDay.map((event: any, idx: any) => (
-                  <div
-                    key={idx}
-                    className="bg-blue-100 text-blue-800 p-2 rounded text-sm mb-1"
-                  >
-                    <div className="font-semibold">{event.title}</div>
-                    <div className="text-xs">Event details here...</div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const WeekView = ({ startDate, EVENTS }: any) => {
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = addDays(startDate, i);
-    return d;
-  });
-
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${i.toString().padStart(2, "0")}:00`
-  );
-
-  return (
-    <div className="pt-4 mb-4">
-      <div className="grid grid-cols-8 text-sm font-semibold text-center text-gray-600">
-        <div className="bg-white py-2" />
-        {weekDays.map((day, idx) => (
-          <div key={idx} className="bg-white py-2">
-            {format(day, "EEE dd")}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-8 gap-px bg-gray-200 border-b border-t">
-        {hours.map((hour, i) => (
-          <div key={hour} className="contents">
-            {" "}
-            <div className="bg-white text-sm text-gray-400 py-3 px-2">
-              {hour}
-            </div>
-            {weekDays.map((day, idx) => {
-              const dateStr = format(day, "yyyy-MM-dd");
-              const event = EVENTS[dateStr];
-              return (
-                <div
-                  key={`${i}-${idx}`}
-                  className="bg-white h-[60px] px-2 py-1 relative hover:bg-slate-50"
-                >
-                  {i === 0 && event && (
-                    <div
-                      className={`absolute top-0 left-1 right-1 px-2 py-1 rounded text-xs font-medium w-fit ${event.color}`}
-                    >
-                      {event.title}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
