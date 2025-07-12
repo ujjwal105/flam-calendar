@@ -1,4 +1,4 @@
-import type { Event } from "@/app/EventCalendar";
+import type { Event } from "@/lib/interface";
 import { addDays, format, isSameDay, isSameMonth } from "date-fns";
 export const MonthView = ({
   currentMonth,
@@ -50,13 +50,7 @@ export const MonthView = ({
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, dateStr)}
             >
-              <span
-                className={`font-semibold text-xs ${
-                  isToday ? "text-blue-600" : ""
-                }`}
-              >
-                {format(date, "d")}
-              </span>
+              <span className={`font-semibold text-xs ${isToday ? "text-blue-600" : ""}`}>{format(date, "d")}</span>
               <div className="mt-1 space-y-1">
                 {dayEvents.slice(0, 3).map((event) => (
                   <div
@@ -73,11 +67,7 @@ export const MonthView = ({
                     {event.time} {event.title}
                   </div>
                 ))}
-                {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 px-2">
-                    +{dayEvents.length - 3} more
-                  </div>
-                )}
+                {dayEvents.length > 3 && <div className="text-xs text-gray-500 px-2">+{dayEvents.length - 3} more</div>}
               </div>
             </div>
           );
@@ -97,19 +87,12 @@ export const DayView = ({
   onEventClick: (event: Event) => void;
 }) => {
   const formattedDate = format(selectedDate, "yyyy-MM-dd");
-  const eventsForSelectedDay = events.filter(
-    (event) => event.date === formattedDate
-  );
+  const eventsForSelectedDay = events.filter((event) => event.date === formattedDate);
 
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${i.toString().padStart(2, "0")}:00`
-  );
+  const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
 
   const getEventsForHour = (hour: string) => {
-    return eventsForSelectedDay.filter((event) =>
-      event.time.startsWith(hour.slice(0, 2))
-    );
+    return eventsForSelectedDay.filter((event) => event.time.startsWith(hour.slice(0, 2)));
   };
 
   return (
@@ -118,13 +101,8 @@ export const DayView = ({
         {hours.map((time, i) => {
           const hourEvents = getEventsForHour(time);
           return (
-            <div
-              key={i}
-              className="flex bg-white px-4 py-3 items-start min-h-[60px]"
-            >
-              <div className="w-20 text-gray-400 text-sm font-medium">
-                {time}
-              </div>
+            <div key={i} className="flex bg-white px-4 py-3 items-start min-h-[60px]">
+              <div className="w-20 text-gray-400 text-sm font-medium">{time}</div>
               <div className="flex-1 space-y-1">
                 {hourEvents.map((event) => (
                   <div
@@ -134,11 +112,7 @@ export const DayView = ({
                   >
                     <div className="font-semibold">{event.title}</div>
                     <div className="text-xs opacity-80">{event.time}</div>
-                    {event.description && (
-                      <div className="text-xs opacity-70 mt-1">
-                        {event.description}
-                      </div>
-                    )}
+                    {event.description && <div className="text-xs opacity-70 mt-1">{event.description}</div>}
                   </div>
                 ))}
               </div>
@@ -164,17 +138,11 @@ export const WeekView = ({
     return d;
   });
 
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${i.toString().padStart(2, "0")}:00`
-  );
+  const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
 
   const getEventsForDateAndHour = (date: Date, hour: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return events.filter(
-      (event) =>
-        event.date === dateStr && event.time.startsWith(hour.slice(0, 2))
-    );
+    return events.filter((event) => event.date === dateStr && event.time.startsWith(hour.slice(0, 2)));
   };
 
   return (
@@ -184,10 +152,7 @@ export const WeekView = ({
         {weekDays.map((day, idx) => {
           const isToday = isSameDay(day, new Date());
           return (
-            <div
-              key={idx}
-              className={`bg-white py-2 ${isToday ? "text-blue-600" : ""}`}
-            >
+            <div key={idx} className={`bg-white py-2 ${isToday ? "text-blue-600" : ""}`}>
               {format(day, "EEE dd")}
             </div>
           );
@@ -196,9 +161,7 @@ export const WeekView = ({
       <div className="grid grid-cols-8 gap-px bg-gray-200 border-b border-t">
         {hours.map((hour, i) => (
           <div key={hour} className="contents">
-            <div className="bg-white text-sm text-gray-400 py-3 px-2 font-medium">
-              {hour}
-            </div>
+            <div className="bg-white text-sm text-gray-400 py-3 px-2 font-medium">{hour}</div>
             {weekDays.map((day, idx) => {
               const hourEvents = getEventsForDateAndHour(day, hour);
               return (

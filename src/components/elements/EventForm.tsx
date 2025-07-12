@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash2, X } from "lucide-react";
-import type { Event } from "@/app/EventCalendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { format } from "date-fns";
 import { eventFormSchema, type EventFormValues } from "@/lib/schema";
-import type { EventFormProps } from "@/lib/interface";
+import type { Event, EventFormProps } from "@/lib/interface";
 import { EVENT_COLORS } from "@/lib/constant";
 
 export const EventForm = ({ event, onSave, onDelete, onClose, selectedDate, checkConflicts }: EventFormProps) => {
