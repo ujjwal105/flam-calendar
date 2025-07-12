@@ -17,22 +17,7 @@ import {
 } from "date-fns";
 import { EventForm } from "@/components/elements/EventForm";
 import { DayView, MonthView, WeekView } from "@/components/elements/CalendarView";
-
-export interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  description: string;
-  recurrence: "none" | "daily" | "weekly" | "monthly" | "custom";
-  customRecurrence?: {
-    interval: number;
-    unit: "days" | "weeks" | "months";
-  };
-  color: string;
-  category?: string;
-  endDate?: string;
-}
+import type { Event } from "@/lib/interface";
 
 function EventCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
