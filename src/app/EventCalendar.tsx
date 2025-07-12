@@ -64,7 +64,7 @@ function EventCalendar() {
   const EVENTS = {};
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full gap-2">
       <div className="w-2/9 bg-white px-8 py-4 rounded shadow flex flex-col">
         <Tabs
           defaultValue="month"
@@ -72,7 +72,7 @@ function EventCalendar() {
           onValueChange={setActiveTab}
         >
           <div className="border-b border-gray-200 mb-2">
-            <TabsList className="flex bg-slate-100 rounded-sm p-1 mb-4 w-full">
+            <TabsList className="flex bg-slate-50 rounded-sm p-1 mb-4 w-full">
               <TabsTrigger value="day">Day</TabsTrigger>
               <TabsTrigger value="week">Week</TabsTrigger>
               <TabsTrigger value="month">Month</TabsTrigger>
@@ -85,13 +85,13 @@ function EventCalendar() {
               onSelect={handleDateSelect}
               month={currentMonth}
               onMonthChange={setCurrentMonth}
-              className="bg-slate-100 rounded-sm"
+              className="bg-slate-50 rounded-sm"
             />
           </div>
         </Tabs>
       </div>
-      <div className="w-7/9 bg-white px-6 rounded shadow overflow-y-auto flex flex-col">
-        <div className="sticky top-0 bg-white z-10 flex pt-4 items-center justify-between w-full pb-4 border-b border-gray-200">
+      <div className="w-7/9 bg-white rounded overflow-y-auto flex flex-col">
+        <div className="sticky top-0 bg-white z-10 px-4 flex pt-4 items-center justify-between w-full pb-4 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-700">
             {activeTab === "day" && selectedDate
               ? format(selectedDate, "MMMM dd, yyyy")
@@ -120,12 +120,12 @@ function EventCalendar() {
             <Button onClick={goToNextMonth} variant="outline" size="sm">
               <ChevronRight />
             </Button>
-            <div className="border-r h-6 border border-gray-300" />
+            <div className="border-r h-8 border border-gray-300" />
             <Button variant="outline">
-              <Funnel size={18} />
+              <Funnel />
             </Button>
             <Button variant="outline">
-              <Menu size={18} />
+              <Menu />
             </Button>
             <Button className="px-6 py-2 bg-blue-500 text-white hover:bg-blue-600">
               <Plus className="mr-2 h-4 w-4" /> Add Schedule
@@ -202,7 +202,7 @@ export const DayView = ({ selectedDate, EVENTS }: any) => {
   );
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 pb-4">
       <div className="grid grid-rows-24 gap-px bg-gray-200">
         {hours.map((time, i) => (
           <div key={i} className="flex bg-white px-4 py-3 items-start">
@@ -238,7 +238,7 @@ export const WeekView = ({ startDate, EVENTS }: any) => {
   );
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 mb-4">
       <div className="grid grid-cols-8 text-sm font-semibold text-center text-gray-600">
         <div className="bg-white py-2" />
         {weekDays.map((day, idx) => (
@@ -247,7 +247,7 @@ export const WeekView = ({ startDate, EVENTS }: any) => {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-8 gap-px bg-gray-200">
+      <div className="grid grid-cols-8 gap-px bg-gray-200 border-b border-t">
         {hours.map((hour, i) => (
           <div key={hour} className="contents">
             {" "}
