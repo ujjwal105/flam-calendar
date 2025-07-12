@@ -221,10 +221,10 @@ function EventCalendar() {
 
   return (
     <div className="flex h-screen w-full gap-2">
-      <div className="w-2/9 bg-white px-8 py-4 rounded shadow flex flex-col">
-        <Tabs defaultValue="month" className="w-full" onValueChange={setActiveTab}>
+      <div className="w-2/9 bg-white py-4 rounded shadow flex-col hidden lg:block ">
+        <Tabs defaultValue="month" className="w-full flex items-center" onValueChange={setActiveTab}>
           <div className="border-b border-gray-200 mb-2">
-            <TabsList className="flex bg-slate-50 rounded-sm p-1 mb-4 w-full">
+            <TabsList className="flex bg-slate-50 rounded-sm mb-4 w-full">
               <TabsTrigger value="day">Day</TabsTrigger>
               <TabsTrigger value="week">Week</TabsTrigger>
               <TabsTrigger value="month">Month</TabsTrigger>
@@ -242,7 +242,7 @@ function EventCalendar() {
           </div>
         </Tabs>
       </div>
-      <div className="w-7/9 bg-white rounded overflow-y-auto flex flex-col">
+      <div className="lg:w-7/9 w-full bg-white rounded overflow-y-auto flex flex-col">
         <div className="sticky top-0 bg-white z-10 px-4 flex pt-4 items-center justify-between w-full pb-4 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-700">
             {activeTab === "day" && selectedDate
@@ -273,14 +273,12 @@ function EventCalendar() {
             <Button variant="outline">
               <Funnel />
             </Button>
-            <Button variant="outline">
-              <Menu />
-            </Button>
             <Button
               onClick={() => setShowEventForm(true)}
               className="px-6 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer"
             >
-              <Plus className="h-4 w-4" /> Add Schedule
+              <Plus className="h-4 w-4" />
+              <span className="hidden lg:block">Add Schedule</span>
             </Button>
           </div>
         </div>
