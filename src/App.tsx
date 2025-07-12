@@ -1,7 +1,7 @@
-import Calender from "@/app/Calender";
+import EventCalendar from "@/app/EventCalendar";
 
 function App() {
-  return <Calender />;
+  return <EventCalendar />;
 }
 
 export default App;
