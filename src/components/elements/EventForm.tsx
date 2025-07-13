@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { eventFormSchema, type EventFormValues } from "@/lib/schema";
 import type { Event, EventFormProps } from "@/lib/interface";
 import { EVENT_COLORS } from "@/lib/constant";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 export const EventForm = ({ event, onSave, onDelete, onClose, selectedDate, checkConflicts }: EventFormProps) => {
   const [conflicts, setConflicts] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,14 +62,18 @@ export const EventForm = ({ event, onSave, onDelete, onClose, selectedDate, chec
   const recurrenceValue = form.watch("recurrence");
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{event ? "Edit Event" : "Add New Event"}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-5 w-5" />
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{event ? "Edit Event" : "Add New Event"}</DialogTitle>
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
           </button>
-        </div>
+        </DialogHeader>
         {conflicts.length > 0 && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
             <p className="text-red-800 font-medium">Time Conflict Detected!</p>
@@ -283,7 +287,7 @@ export const EventForm = ({ event, onSave, onDelete, onClose, selectedDate, chec
             </div>
           </form>
         </Form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -38,10 +38,12 @@ export interface DayViewProps {
   selectedDate: Date;
   events: Event[];
   onEventClick: (event: Event) => void;
+  onDateClick: (date: Date) => void;
 }
 
 export interface WeekViewProps {
   startDate: Date;
   events: Event[];
   onEventClick: (event: Event) => void;
+  onDateClick: (date: Date) => void;
 }

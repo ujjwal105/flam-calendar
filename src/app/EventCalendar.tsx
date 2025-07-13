@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
+import type React from "react";
+
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, FilterIcon as Funnel, Menu, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, FilterIcon as Funnel, Plus, Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import {
@@ -14,9 +16,14 @@ import {
   addWeeks,
   addMonths,
   isBefore,
+  subDays,
+  subWeeks,
+  subMonths,
 } from "date-fns";
 import { EventForm } from "@/components/elements/EventForm";
 import { DayView, MonthView, WeekView } from "@/components/elements/CalendarView";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import type { Event } from "@/lib/interface";
 
 function EventCalendar() {
@@ -58,20 +65,40 @@ function EventCalendar() {
     day = addDays(day, 1);
   }
 
-  const goToPrevMonth = () => {
-    setCurrentMonth((prev) => {
-      const newMonth = new Date(prev.getFullYear(), prev.getMonth() - 1);
-      setSelectedDate(startOfMonth(newMonth));
-      return newMonth;
-    });
+  const goToPrev = () => {
+    if (activeTab === "day" && selectedDate) {
+      const newDate = subDays(selectedDate, 1);
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+    } else if (activeTab === "week" && selectedDate) {
+      const newDate = subWeeks(selectedDate, 1);
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+    } else {
+      setCurrentMonth((prev) => {
+        const newMonth = subMonths(prev, 1);
+        setSelectedDate(startOfMonth(newMonth));
+        return newMonth;
+      });
+    }
   };
 
-  const goToNextMonth = () => {
-    setCurrentMonth((prev) => {
-      const newMonth = new Date(prev.getFullYear(), prev.getMonth() + 1);
-      setSelectedDate(startOfMonth(newMonth));
-      return newMonth;
-    });
+  const goToNext = () => {
+    if (activeTab === "day" && selectedDate) {
+      const newDate = addDays(selectedDate, 1);
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+    } else if (activeTab === "week" && selectedDate) {
+      const newDate = addWeeks(selectedDate, 1);
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+    } else {
+      setCurrentMonth((prev) => {
+        const newMonth = addMonths(prev, 1);
+        setSelectedDate(startOfMonth(newMonth));
+        return newMonth;
+      });
+    }
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -83,16 +110,13 @@ function EventCalendar() {
 
   const generateRecurringEvents = (baseEvent: Event): Event[] => {
     if (baseEvent.recurrence === "none") return [baseEvent];
-
     const recurringEvents: Event[] = [baseEvent];
     const startDate = parseISO(baseEvent.date);
     const endDate = baseEvent.endDate ? parseISO(baseEvent.endDate) : addMonths(startDate, 12);
-
     let currentDate = startDate;
 
     while (isBefore(currentDate, endDate)) {
       let nextDate: Date;
-
       switch (baseEvent.recurrence) {
         case "daily":
           nextDate = addDays(currentDate, 1);
@@ -134,21 +158,17 @@ function EventCalendar() {
           date: format(nextDate, "yyyy-MM-dd"),
         });
       }
-
       currentDate = nextDate;
     }
-
     return recurringEvents;
   };
 
   const getAllEvents = (): Event[] => {
     const allEvents: Event[] = [];
-
     events.forEach((event) => {
       const recurringEvents = generateRecurringEvents(event);
       allEvents.push(...recurringEvents);
     });
-
     return allEvents;
   };
 
@@ -158,7 +178,6 @@ function EventCalendar() {
 
   const getFilteredEvents = (): Event[] => {
     let filteredEvents = getAllEvents();
-
     if (searchTerm) {
       filteredEvents = filteredEvents.filter(
         (event) =>
@@ -166,11 +185,9 @@ function EventCalendar() {
           event.description.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
-
     if (filterCategory !== "all") {
       filteredEvents = filteredEvents.filter((event) => event.category === filterCategory);
     }
-
     return filteredEvents;
   };
 
@@ -179,7 +196,6 @@ function EventCalendar() {
       ...eventData,
       id: Date.now().toString(),
     };
-
     setEvents((prev) => [...prev, newEvent]);
     setShowEventForm(false);
   };
@@ -252,7 +268,7 @@ function EventCalendar() {
               : format(currentMonth, "MMMM yyyy")}
           </h1>
           <div className="flex items-center gap-3">
-            <Button onClick={goToPrevMonth} variant="outline" size="sm">
+            <Button onClick={goToPrev} variant="outline" size="sm">
               <ChevronLeft />
             </Button>
             <Button
@@ -266,13 +282,33 @@ function EventCalendar() {
             >
               Today
             </Button>
-            <Button onClick={goToNextMonth} variant="outline" size="sm">
+            <Button onClick={goToNext} variant="outline" size="sm">
               <ChevronRight />
             </Button>
             <div className="border-r h-8 border border-gray-300" />
-            <Button variant="outline">
-              <Funnel />
-            </Button>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Search events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 pr-2 py-1 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-40"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[120px]">
+                <Funnel className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="work">Work</SelectItem>
+                <SelectItem value="personal">Personal</SelectItem>
+                <SelectItem value="holiday">Holiday</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               onClick={() => setShowEventForm(true)}
               className="px-6 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer"
@@ -308,6 +344,10 @@ function EventCalendar() {
               setEditingEvent(event);
               setShowEventForm(true);
             }}
+            onDateClick={(date) => {
+              setSelectedDate(date);
+              setShowEventForm(true);
+            }}
           />
         )}
         {activeTab === "week" && selectedDate && (
@@ -316,6 +356,10 @@ function EventCalendar() {
             events={getFilteredEvents()}
             onEventClick={(event) => {
               setEditingEvent(event);
+              setShowEventForm(true);
+            }}
+            onDateClick={(date) => {
+              setSelectedDate(date);
               setShowEventForm(true);
             }}
           />

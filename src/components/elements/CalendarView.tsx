@@ -69,14 +69,20 @@ export const MonthView = ({
   );
 };
 
-export const DayView = ({ selectedDate, events, onEventClick }: DayViewProps) => {
+export const DayView = ({ selectedDate, events, onEventClick, onDateClick }: DayViewProps) => {
   const formattedDate = format(selectedDate, "yyyy-MM-dd");
   const eventsForSelectedDay = events.filter((event) => event.date === formattedDate);
-
   const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
 
   const getEventsForHour = (hour: string) => {
     return eventsForSelectedDay.filter((event) => event.time.startsWith(hour.slice(0, 2)));
+  };
+
+  const handleTimeSlotClick = (hour: string) => {
+    const [hourNum] = hour.split(":");
+    const dateWithTime = new Date(selectedDate);
+    dateWithTime.setHours(Number.parseInt(hourNum), 0, 0, 0);
+    onDateClick(dateWithTime);
   };
 
   return (
@@ -85,14 +91,21 @@ export const DayView = ({ selectedDate, events, onEventClick }: DayViewProps) =>
         {hours.map((time, i) => {
           const hourEvents = getEventsForHour(time);
           return (
-            <div key={i} className="flex bg-white px-4 py-3 items-start min-h-[60px]">
+            <div
+              key={i}
+              className="flex bg-white px-4 py-3 items-start min-h-14 cursor-pointer"
+              onClick={() => handleTimeSlotClick(time)}
+            >
               <div className="w-20 text-gray-400 text-sm font-medium">{time}</div>
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 space-y-1 p-2 rounded">
                 {hourEvents.map((event) => (
                   <div
                     key={event.id}
                     className={`p-2 rounded text-sm cursor-pointer ${event.color}`}
-                    onClick={() => onEventClick(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick(event);
+                    }}
                   >
                     <div className="font-semibold">{event.title}</div>
                     <div className="text-xs opacity-80">{event.time}</div>
@@ -108,17 +121,23 @@ export const DayView = ({ selectedDate, events, onEventClick }: DayViewProps) =>
   );
 };
 
-export const WeekView = ({ startDate, events, onEventClick }: WeekViewProps) => {
+export const WeekView = ({ startDate, events, onEventClick, onDateClick }: WeekViewProps) => {
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(startDate, i);
     return d;
   });
-
   const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
 
   const getEventsForDateAndHour = (date: Date, hour: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return events.filter((event) => event.date === dateStr && event.time.startsWith(hour.slice(0, 2)));
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: string) => {
+    const [hourNum] = hour.split(":");
+    const dateWithTime = new Date(date);
+    dateWithTime.setHours(Number.parseInt(hourNum), 0, 0, 0);
+    onDateClick(dateWithTime);
   };
 
   return (
@@ -143,13 +162,17 @@ export const WeekView = ({ startDate, events, onEventClick }: WeekViewProps) => 
               return (
                 <div
                   key={`${i}-${idx}`}
-                  className="bg-white h-[60px] px-2 py-1 relative hover:bg-slate-50 border-r border-gray-100"
+                  className="bg-white h-[60px] px-2 py-1 relative hover:bg-slate-50 border-r border-gray-100 cursor-pointer"
+                  onClick={() => handleTimeSlotClick(day, hour)}
                 >
                   {hourEvents.map((event) => (
                     <div
                       key={event.id}
                       className={`absolute top-0 left-1 right-1 px-2 py-1 rounded text-xs font-medium cursor-pointer ${event.color} truncate`}
-                      onClick={() => onEventClick(event)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventClick(event);
+                      }}
                       title={`${event.title} - ${event.time}`}
                     >
                       {event.title}
