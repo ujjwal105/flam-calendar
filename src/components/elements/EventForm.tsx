@@ -270,7 +270,11 @@ export const EventForm = ({ event, onSave, onDelete, onClose, selectedDate, chec
               />
             </div>
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1" disabled={isLoading}>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-6 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer"
+              >
                 {isLoading ? "Saving..." : event ? "Update Event" : "Create Event"}
               </Button>
               {event && onDelete && (

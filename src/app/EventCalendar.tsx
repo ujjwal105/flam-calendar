@@ -201,16 +201,36 @@ function EventCalendar() {
   };
 
   const updateEvent = (eventId: string, eventData: Partial<Event>) => {
-    setEvents((prev) => prev.map((event) => (event.id === eventId ? { ...event, ...eventData } : event)));
+    const baseEventId = eventId.includes("-") ? eventId.split("-")[0] : eventId;
+
+    setEvents((prev) =>
+      prev.map((event) => {
+        if (event.id === baseEventId) {
+          return { ...event, ...eventData };
+        }
+        return event;
+      }),
+    );
     setEditingEvent(null);
     setShowEventForm(false);
   };
 
-  // delete the schedule event
   const deleteEvent = (eventId: string) => {
-    setEvents((prev) => prev.filter((event) => event.id !== eventId));
+    const baseEventId = eventId.includes("-") ? eventId.split("-")[0] : eventId;
+    setEvents((prev) => prev.filter((event) => event.id !== baseEventId));
     setEditingEvent(null);
     setShowEventForm(false);
+  };
+
+  const checkEventConflicts = (newEvent: Event, originalEventId?: string): Event[] => {
+    const existingEventsOnDate = getEventsForDate(newEvent.date);
+    return existingEventsOnDate.filter((existingEvent) => {
+      const isSameTime = existingEvent.time === newEvent.time;
+      const isSelf = existingEvent.id === newEvent.id;
+      const isOriginalEventBeingEdited = originalEventId && existingEvent.id === originalEventId;
+
+      return isSameTime && !isSelf && !isOriginalEventBeingEdited;
+    });
   };
 
   const handleDragStart = (e: Event) => {
@@ -230,46 +250,47 @@ function EventCalendar() {
     }
   };
 
-  const checkEventConflicts = (newEvent: Event): Event[] => {
-    const existingEvents = getEventsForDate(newEvent.date);
-    return existingEvents.filter((event) => event.id !== newEvent.id && event.time === newEvent.time);
-  };
-
   return (
-    <div className="flex h-screen w-full gap-2">
-      <div className="w-2/9 bg-white py-4 rounded shadow flex-col hidden lg:block ">
-        <Tabs defaultValue="month" className="w-full flex items-center" onValueChange={setActiveTab}>
-          <div className="border-b border-gray-200 mb-2">
-            <TabsList className="flex bg-slate-50 rounded-sm mb-4 w-full">
-              <TabsTrigger value="day">Day</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
+    <div className="flex flex-col lg:flex-row h-screen gap-4 p-4 bg-gray-100">
+      <div className="w-full lg:w-80 bg-white py-4 rounded-lg shadow flex-shrink-0">
+        <Tabs defaultValue="month" className="w-full flex flex-col items-center" onValueChange={setActiveTab}>
+          <div className="border-b border-gray-200 mb-4 w-full px-4">
+            <TabsList className="flex bg-slate-50 rounded-md mb-4 w-full max-w-md mx-auto">
+              <TabsTrigger value="day" className="flex-1">
+                Day
+              </TabsTrigger>
+              <TabsTrigger value="week" className="flex-1">
+                Week
+              </TabsTrigger>
+              <TabsTrigger value="month" className="flex-1">
+                Month
+              </TabsTrigger>
             </TabsList>
           </div>
-          <div className="ml-1">
+          <div className="w-full px-4 max-w-md mx-auto">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
               month={currentMonth}
               onMonthChange={setCurrentMonth}
-              className="bg-slate-50 rounded-sm"
+              className="bg-slate-50 rounded-md w-full"
             />
           </div>
         </Tabs>
       </div>
-      <div className="lg:w-7/9 w-full bg-white rounded overflow-y-auto flex flex-col">
-        <div className="sticky top-0 bg-white z-10 px-4 flex pt-4 items-center justify-between w-full pb-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-700">
+      <div className="flex-1 min-w-0 bg-white rounded-lg shadow flex flex-col">
+        <div className="sticky top-0 bg-white z-10 px-6 py-4 flex flex-col sm:flex-row items-center justify-between w-full border-b border-gray-200 gap-y-3 sm:gap-y-0">
+          <h1 className="text-2xl font-bold text-gray-700 text-center sm:text-left">
             {activeTab === "day" && selectedDate
               ? format(selectedDate, "MMMM dd, yyyy")
               : activeTab === "week" && selectedDate
               ? `${format(startOfWeek(selectedDate), "MMM dd")} - ${format(endOfWeek(selectedDate), "MMM dd, yyyy")}`
               : format(currentMonth, "MMMM yyyy")}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-2">
             <Button onClick={goToPrev} variant="outline" size="sm">
-              <ChevronLeft />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               onClick={() => {
@@ -278,26 +299,28 @@ function EventCalendar() {
                 setSelectedDate(today);
               }}
               variant="outline"
-              className="px-5 py-2"
+              className="px-4 py-2 text-sm"
             >
               Today
             </Button>
             <Button onClick={goToNext} variant="outline" size="sm">
-              <ChevronRight />
+              <ChevronRight className="h-4 w-4" />
             </Button>
-            <div className="border-r h-8 border border-gray-300" />
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <div className="w-px h-6 bg-gray-300 mx-2 hidden sm:block" />
+            <div className="relative w-full sm:w-40">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 type="text"
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-2 py-1 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-40"
+                className="pl-9 pr-2 py-1.5 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
               />
             </div>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-full sm:w-[120px]">
+                {" "}
+                {/* Make select responsive */}
                 <Funnel className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -311,10 +334,10 @@ function EventCalendar() {
             </Select>
             <Button
               onClick={() => setShowEventForm(true)}
-              className="px-6 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer"
+              className="px-5 py-2 bg-[#b9fa00] text-black hover:bg-[#d4ff65] cursor-pointer text-sm"
             >
-              <Plus className="h-4 w-4" />
-              <span className="hidden lg:block">Add Schedule</span>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Schedule
             </Button>
           </div>
         </div>
