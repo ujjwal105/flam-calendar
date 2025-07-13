@@ -1,5 +1,6 @@
-import type { Event } from "@/lib/interface";
+import type { DayViewProps, Event, MonthViewProps, WeekViewProps } from "@/lib/interface";
 import { addDays, format, isSameDay, isSameMonth } from "date-fns";
+
 export const MonthView = ({
   currentMonth,
   calendarDays,
@@ -9,16 +10,7 @@ export const MonthView = ({
   onDragStart,
   onDragOver,
   onDrop,
-}: {
-  currentMonth: Date;
-  calendarDays: Date[];
-  events: Event[];
-  onEventClick: (event: Event) => void;
-  onDateClick: (date: Date) => void;
-  onDragStart: (event: Event) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, date: string) => void;
-}) => {
+}: MonthViewProps) => {
   const getEventsForDate = (date: Date): Event[] => {
     const dateStr = format(date, "yyyy-MM-dd");
     return events.filter((event) => event.date === dateStr);
@@ -77,15 +69,7 @@ export const MonthView = ({
   );
 };
 
-export const DayView = ({
-  selectedDate,
-  events,
-  onEventClick,
-}: {
-  selectedDate: Date;
-  events: Event[];
-  onEventClick: (event: Event) => void;
-}) => {
+export const DayView = ({ selectedDate, events, onEventClick }: DayViewProps) => {
   const formattedDate = format(selectedDate, "yyyy-MM-dd");
   const eventsForSelectedDay = events.filter((event) => event.date === formattedDate);
 
@@ -124,15 +108,7 @@ export const DayView = ({
   );
 };
 
-export const WeekView = ({
-  startDate,
-  events,
-  onEventClick,
-}: {
-  startDate: Date;
-  events: Event[];
-  onEventClick: (event: Event) => void;
-}) => {
+export const WeekView = ({ startDate, events, onEventClick }: WeekViewProps) => {
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(startDate, i);
     return d;

@@ -22,3 +22,26 @@ export interface Event {
   category?: string;
   endDate?: string;
 }
+
+export interface MonthViewProps {
+  currentMonth: Date;
+  calendarDays: Date[];
+  events: Event[];
+  onEventClick: (event: Event) => void;
+  onDateClick: (date: Date) => void;
+  onDragStart: (event: Event) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, date: string) => void;
+}
+
+export interface DayViewProps {
+  selectedDate: Date;
+  events: Event[];
+  onEventClick: (event: Event) => void;
+}
+
+export interface WeekViewProps {
+  startDate: Date;
+  events: Event[];
+  onEventClick: (event: Event) => void;
+}
